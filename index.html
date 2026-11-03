@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en" data-theme="night">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rootlight</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='30' fill='%23141a33'/><path d='M32 52V30M32 38l-10-9M32 34l9-8M32 44l8-6' stroke='%23f2c46d' stroke-width='4' stroke-linecap='round' fill='none'/><circle cx='22' cy='28' r='4' fill='%23f2c46d'/><circle cx='42' cy='25' r='4' fill='%23f2c46d'/><circle cx='32' cy='18' r='5' fill='%23f2c46d'/></svg>">
+</head>
+<body>
+  <canvas id="sky" aria-hidden="true"></canvas>
+
+  <!-- Welcome -->
+  <section id="welcome" class="welcome">
+    <div class="welcome-card">
+      <svg class="sprout" viewBox="0 0 200 160" aria-hidden="true">
+        <path class="stem" d="M100 158 C100 120 100 100 100 70"/>
+        <path class="stem s2" d="M100 118 C 80 108 66 96 58 78"/>
+        <path class="stem s3" d="M100 104 C 120 96 134 82 142 64"/>
+        <path class="stem s4" d="M100 88 C 88 78 82 60 80 44"/>
+        <path class="stem s5" d="M100 84 C 112 72 118 56 120 38"/>
+        <circle class="bud b1" cx="58" cy="78" r="6"/><circle class="bud b2" cx="142" cy="64" r="6"/>
+        <circle class="bud b3" cx="80" cy="44" r="6"/><circle class="bud b4" cx="120" cy="38" r="6"/>
+        <circle class="bud b5" cx="100" cy="66" r="8"/>
+      </svg>
+      <h1>Rootlight</h1>
+      <p class="tag">Every family is a constellation. Open a GEDCOM file and wander through yours.</p>
+      <label id="dropzone" class="dropzone" tabindex="0">
+        <input id="file-input" type="file" accept=".ged,.gedcom,.txt" hidden>
+        <span class="dz-icon">⇪</span>
+        <span class="dz-main">Drop a <b>.ged</b> file here</span>
+        <span class="dz-sub">or click to choose one · it never leaves your computer</span>
+      </label>
+      <div class="welcome-actions">
+        <button id="try-sample" class="btn ghost">✦ Explore a sample family</button>
+        <button id="resume" class="btn ghost" hidden>↺ Reopen <span id="resume-name"></span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- App -->
+  <div id="app" class="app" hidden>
+    <header class="topbar">
+      <div class="brand" title="Rootlight"><span class="brand-mark">✺</span><span class="brand-name">Rootlight</span></div>
+      <nav class="views" role="tablist">
+        <button data-view="tree" role="tab" title="Family tree (1)"><span>🌳</span><em>Tree</em></button>
+        <button data-view="fan" role="tab" title="Ancestor fan (2)"><span>◔</span><em>Fan</em></button>
+        <button data-view="stars" role="tab" title="Constellation (3)"><span>✦</span><em>Stars</em></button>
+        <button data-view="timeline" role="tab" title="River of time (4)"><span>≋</span><em>Timeline</em></button>
+        <button data-view="almanac" role="tab" title="Family almanac (5)"><span>❦</span><em>Almanac</em></button>
+      </nav>
+      <div class="tools">
+        <button id="search-btn" class="search-pill" title="Search (/ or ⌘K)"><span>⌕</span><em>Find someone…</em><kbd>/</kbd></button>
+        <button id="dice" class="icon-btn" title="Surprise me — jump to a random relative (R)">🎲</button>
+        <button id="home-btn" class="icon-btn" title="Go home (H)">⌂</button>
+        <button id="theme-btn" class="icon-btn" title="Switch night / parchment">☾</button>
+        <button id="open-btn" class="icon-btn" title="Open another file">⇪</button>
+      </div>
+    </header>
+
+    <main class="stage">
+      <div id="view-tree" class="view" data-view="tree"></div>
+      <div id="view-fan" class="view" data-view="fan"></div>
+      <div id="view-stars" class="view" data-view="stars"></div>
+      <div id="view-timeline" class="view" data-view="timeline"></div>
+      <div id="view-almanac" class="view scroll" data-view="almanac"></div>
+      <div id="hint" class="hint"></div>
+    </main>
+
+    <aside id="panel" class="panel" aria-live="polite"></aside>
+    <button id="panel-toggle" class="panel-toggle" title="Toggle story panel (S)">❮</button>
+
+    <footer class="trail">
+      <span class="trail-label">Your path</span>
+      <ol id="trail"></ol>
+      <span class="keys"><kbd>↑</kbd> father <kbd>⇧↑</kbd> mother <kbd>↓</kbd> child <kbd>←</kbd><kbd>→</kbd> siblings</span>
+    </footer>
+  </div>
+
+  <!-- Search palette -->
+  <div id="palette" class="palette" hidden>
+    <div class="palette-box" role="dialog" aria-label="Find a person">
+      <input id="palette-input" placeholder="Search by name, place, year, or occupation…" autocomplete="off" spellcheck="false">
+      <ul id="palette-results"></ul>
+      <div class="palette-foot"><span><kbd>↑↓</kbd> move</span><span><kbd>↵</kbd> visit</span><span><kbd>⇧↵</kbd> how are we related?</span><span><kbd>esc</kbd> close</span></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <div id="tooltip" class="tooltip"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+  <script src="js/gedcom.js"></script>
+  <script src="js/sample.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/views/tree.js"></script>
+  <script src="js/views/fan.js"></script>
+  <script src="js/views/stars.js"></script>
+  <script src="js/views/timeline.js"></script>
+  <script src="js/views/almanac.js"></script>
+  <script src="js/panel.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
