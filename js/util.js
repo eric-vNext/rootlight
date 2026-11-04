@@ -51,31 +51,7 @@
   }
 
   // A light world-history backdrop, used by the timeline and the story panel.
-  const WORLD = [
-    { y: 1776, label: 'American Declaration of Independence' },
-    { y: 1789, label: 'French Revolution begins' },
-    { y: 1803, end: 1815, label: 'Napoleonic Wars' },
-    { y: 1825, label: 'First passenger railway opens' },
-    { y: 1837, label: 'Queen Victoria crowned' },
-    { y: 1845, end: 1852, label: 'Great Irish Famine' },
-    { y: 1848, label: 'Revolutions sweep Europe' },
-    { y: 1861, end: 1865, label: 'American Civil War' },
-    { y: 1869, label: 'Transcontinental railroad completed' },
-    { y: 1876, label: 'Telephone patented' },
-    { y: 1892, label: 'Ellis Island opens' },
-    { y: 1903, label: 'First powered flight' },
-    { y: 1912, label: 'Titanic sinks' },
-    { y: 1914, end: 1918, label: 'First World War' },
-    { y: 1918, label: 'Influenza pandemic' },
-    { y: 1929, label: 'Wall Street Crash' },
-    { y: 1939, end: 1945, label: 'Second World War' },
-    { y: 1956, label: 'Hungarian Revolution' },
-    { y: 1969, label: 'First Moon landing' },
-    { y: 1989, label: 'Berlin Wall falls' },
-    { y: 1991, label: 'World Wide Web goes public' },
-    { y: 2007, label: 'First iPhone' },
-    { y: 2020, label: 'COVID-19 pandemic' },
-  ];
+  const WORLD = window.World.EVENTS;
 
   function personChip(tree, p, sub) {
     const life = tree.lifespan(p);

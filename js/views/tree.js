@@ -156,9 +156,9 @@ window.TreeView = (function () {
           .attr('transform', d => `translate(${(d.x + ox) / 2},${(d.y + oy) / 2}) scale(.85)`);
         g.append('rect').attr('class', 'bg').attr('x', -W / 2).attr('y', -H / 2).attr('width', W).attr('height', H).attr('rx', 14);
         g.append('rect').attr('class', 'strip').attr('x', -W / 2).attr('y', -H / 2 + 12).attr('width', 3.5).attr('height', H - 24).attr('rx', 2);
-        g.append('circle').attr('class', 'av').attr('cx', -W / 2 + 28).attr('cy', 0).attr('r', 17);
-        g.append('text').attr('class', 'avt').attr('x', -W / 2 + 28).attr('y', 5).attr('text-anchor', 'middle').style('font', '500 13px Fraunces, serif').style('fill', '#fff');
-        g.append('text').attr('class', 'rel').attr('x', -W / 2 + 54).attr('y', -H / 2 + 17);
+        g.append('circle').attr('class', 'av').attr('cx', -W / 2 + 28).attr('cy', 6).attr('r', 16);
+        g.append('text').attr('class', 'avt').attr('x', -W / 2 + 28).attr('y', 11).attr('text-anchor', 'middle').style('font', '500 13px Fraunces, serif').style('fill', '#fff');
+        g.append('text').attr('class', 'rel').attr('x', -W / 2 + 16).attr('y', -H / 2 + 15);
         g.append('text').attr('class', 'nm').attr('x', -W / 2 + 54).attr('y', -2);
         g.append('text').attr('class', 'sn').attr('x', -W / 2 + 54).attr('y', 14);
         g.append('text').attr('class', 'yr').attr('x', -W / 2 + 54).attr('y', H / 2 - 10);
@@ -186,7 +186,11 @@ window.TreeView = (function () {
       g.select('.strip').attr('fill', U.sexColor(p));
       g.select('.av').attr('fill', U.surnameColor(p.surname, U.isNight() ? 40 : 45)).attr('stroke', d.focus ? U.css('--gold') : 'none').attr('stroke-width', 2).attr('stroke-dasharray', null);
       g.select('.avt').text(U.initials(p)).style('fill', '#fff');
-      g.select('.rel').text(p.id === app.homeId ? '⌂ home' : rel ? clip(rel.label, 24) : d.spouse ? 'spouse' : '');
+      const relEl = g.select('.rel').attr('textLength', null).attr('lengthAdjust', null)
+        .text(p.id === app.homeId ? '⌂ home' : rel ? rel.label : d.spouse ? 'spouse' : '');
+      // the label spans the whole tile; squeeze it only if it is still too long
+      const room = W - 32, natural = relEl.node().getComputedTextLength();
+      if (natural > room) relEl.attr('textLength', room).attr('lengthAdjust', 'spacingAndGlyphs');
       g.select('.nm').text(clip(p.given || 'Unknown', 17));
       g.select('.sn').text(clip(p.surname || '', 18));
       const life = t.lifespan(p);
