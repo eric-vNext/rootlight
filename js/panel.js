@@ -148,6 +148,21 @@
       <div class="path-steps">${steps}</div></div></div>`;
   }
 
+  // Every photo of this person that was found, main photo first.
+  function shotsOf(p) {
+    const rec = App.photoMatch && App.photoMatch.byPerson.get(p.id);
+    if (!rec) return [];
+    const got = rec.items.filter(it => it.status === 'matched');
+    got.sort((a, b) => (b === rec.cover) - (a === rec.cover));
+    return got.map(it => ({ path: it.photo.path, name: it.photo.name, title: it.ref.title, who: p.name }));
+  }
+  function gallery(p) {
+    const shots = shotsOf(p);
+    if (!shots.length) return '';
+    return `<div class="p-section"><h3>Photos</h3><div class="p-photos">${shots.map((s, i) =>
+      `<button class="p-photo" data-shot="${i}" data-photo="${esc(s.path)}" title="${esc(s.title || s.name)}" aria-label="Open photo: ${esc(s.title || s.name)}"></button>`).join('')}</div></div>`;
+  }
+
   function render(p, opts = {}) {
     const t = App.tree;
     const el = document.getElementById('panel');
@@ -161,7 +176,7 @@
     else if (p.living) life.push('living');
     el.innerHTML = `
       <div class="p-hero" style="--accent:${accent};--accent-line:${accent}">
-        <div class="p-avatar ${p.id === App.homeId ? 'home' : ''}" style="background:${U.avatarBg(p)}">${esc(U.initials(p))}</div>
+        <div class="p-avatar ${p.id === App.homeId ? 'home' : ''}" style="background:${U.avatarBg(p)}"${U.photoAttr(p)}>${esc(U.initials(p))}</div>
         <h2 class="p-name">${esc(p.given || 'Unknown')} <span class="sur">${esc(p.surname)}</span></h2>
         ${p.nick ? `<div style="color:var(--ink-3)">“${esc(p.nick)}”</div>` : ''}
         <div class="p-life">${life.map(l => `<span>${l}</span>`).join('')}</div>
@@ -175,11 +190,14 @@
       </div>
       ${opts.pathTo ? pathBox(t, opts.pathTo) : ''}
       <div class="p-section"><h3>Their story</h3><div class="p-story">${story(t, p)}</div></div>
+      ${gallery(p)}
       ${p.notes.length ? `<div class="p-section"><h3>Notes</h3>${p.notes.map(n => `<p class="notes">${esc(n)}</p>`).join('')}</div>` : ''}
       <div class="p-section"><h3>Family</h3>${kin(t, p)}</div>
       <div class="p-section"><h3>Life &amp; times</h3>${facts(t, p)}</div>
       <div class="p-section" style="color:var(--ink-3);font-size:11px">GEDCOM id ${esc(p.id)}</div>`;
     el.scrollTop = 0;
+    const shots = shotsOf(p);
+    el.querySelectorAll('[data-shot]').forEach(btn => btn.addEventListener('click', () => Photos.open(shots, +btn.dataset.shot)));
     el.querySelectorAll('[data-act]').forEach(btn => btn.addEventListener('click', () => {
       const a = btn.dataset.act;
       if (a === 'home') App.setHome(p.id);

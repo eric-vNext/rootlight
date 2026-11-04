@@ -465,7 +465,7 @@ window.TimelineView = (function () {
     hero.select('.rt-family').html(alive.slice(0, MAX).map(r => {
       const age = Y - r.b;
       return `<button class="rt-chip" data-goto="${U.esc(r.p.id)}" title="${U.esc(r.p.name)}">
-        <span class="dot" style="background:${U.avatarBg(r.p)}">${U.esc(U.initials(r.p))}</span>
+        ${U.dot(r.p)}
         <span class="nm">${U.esc(first(r.p))}</span><span class="ag">${r.estB ? '~' : ''}${age}</span></button>`;
     }).join('') + (alive.length > MAX ? `<span class="rt-more">+${alive.length - MAX}</span>` : ''));
   }

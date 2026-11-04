@@ -56,6 +56,46 @@
   const children = (n, tag) => n.children.filter(c => c.tag === tag);
   const ptr = v => (v || '').trim().replace(/^@|@$/g, '');
 
+  // ---------- media ----------
+  // GEDCOM only stores references to photos, never the pixels. Three shapes exist in the wild:
+  //   5.5     1 OBJE / 2 FORM jpg / 2 FILE x.jpg / 2 TITL ...        (inline, FORM beside FILE)
+  //   5.5.1   1 OBJE @M1@  ->  0 @M1@ OBJE / 1 FILE x.jpg / 2 FORM jpg   (pointer to a record)
+  //   7.0     1 OBJE @M1@  ->  0 @M1@ OBJE / 1 FILE x.jpg / 2 FORM image/jpeg
+  // Ancestry, Family Tree Maker and RootsMagic add `_PRIM Y` to flag a person's main photo.
+  const IMAGE_FORM = /^(jpe?g|png|gif|webp|bmp|avif)$/;
+  const IMAGE_EXT = /\.(jpe?g|png|gif|webp|bmp|avif)$/i;
+  const isPtr = v => /^@[^@]+@$/.test((v || '').trim());
+  const isYes = n => !!n && /^y/i.test(childVal(n, '_PRIM'));
+
+  function fileName(path) {
+    let name = path.split(/[\\/]/).pop().replace(/[?#].*$/, '');
+    try { name = decodeURIComponent(name); } catch { /* keep as written */ }
+    return name;
+  }
+
+  // Returns the image references one OBJE node describes; non-image attachments (PDFs, audio) are counted in `skipped`.
+  function parseObject(ref, records, tally) {
+    const node = isPtr(ref.value) ? records[ptr(ref.value)] : ref;
+    if (!node) { tally.broken++; return []; }
+    const out = [];
+    for (const f of children(node, 'FILE')) {
+      const file = f.value.trim();
+      if (!file) continue;
+      const form = (childVal(f, 'FORM') || childVal(node, 'FORM')).toLowerCase().replace(/^image\//, '').replace('jpeg', 'jpg');
+      const bare = file.replace(/[?#].*$/, '');
+      if (!IMAGE_EXT.test(bare) && !IMAGE_FORM.test(form)) { tally.skipped++; continue; }
+      out.push({
+        file,
+        name: fileName(file),
+        form: form || bare.split('.').pop().toLowerCase().replace('jpeg', 'jpg'),
+        title: childVal(f, 'TITL') || childVal(node, 'TITL') || childVal(ref, 'TITL'),
+        primary: isYes(f) || isYes(node) || isYes(ref),
+        remote: /^https?:\/\//i.test(file),
+      });
+    }
+    return out;
+  }
+
   // ---------- dates ----------
   function parseDate(raw) {
     if (!raw) return null;
@@ -120,6 +160,9 @@
     const roots = parseTree(text);
     const notes = {};
     for (const r of roots) if (r.tag === 'NOTE' && r.xref) notes[r.xref] = r.value;
+    const objects = {};
+    for (const r of roots) if (r.tag === 'OBJE' && r.xref) objects[r.xref] = r;
+    const tally = { refs: 0, images: 0, remote: 0, skipped: 0, broken: 0 };
     const resolveNote = n => (/^@[^@]+@$/.test(n.value.trim()) ? notes[ptr(n.value)] || '' : n.value);
 
     const people = new Map();
@@ -150,6 +193,7 @@
           fams: children(r, 'FAMS').map(n => ptr(n.value)),
           notes: children(r, 'NOTE').map(resolveNote).filter(Boolean),
           occupation: '',
+          media: [], photo: null,
           birth: null, death: null,
           living: true,
         };
@@ -160,6 +204,18 @@
             p.events.push(ev);
           }
         }
+        for (const o of children(r, 'OBJE')) {
+          tally.refs++;
+          for (const m of parseObject(o, objects, tally)) {
+            // the same file referenced twice (e.g. inline and by pointer) is one photo
+            const dup = p.media.find(x => x.file === m.file);
+            if (dup) { dup.primary = dup.primary || m.primary; dup.title = dup.title || m.title; continue; }
+            p.media.push(m);
+            tally.images++;
+            if (m.remote) tally.remote++;
+          }
+        }
+        p.photo = p.media.find(m => m.primary) || p.media[0] || null;
         p.birth = p.events.find(e => e.tag === 'BIRT') || p.events.find(e => e.tag === 'CHR' || e.tag === 'BAPM') || null;
         p.death = p.events.find(e => e.tag === 'DEAT') || p.events.find(e => e.tag === 'BURI' || e.tag === 'CREM') || null;
         const occ = p.events.find(e => e.tag === 'OCCU');
@@ -212,7 +268,9 @@
       if (p.living && by != null && nowY - by > 110) p.living = false;
     }
 
-    return new FamilyTree(people, families, header);
+    const tree = new FamilyTree(people, families, header);
+    tree.mediaInfo = tally; // { refs, images, remote, skipped, broken } — how many photo references the file holds
+    return tree;
   }
 
   function yearOf(p, which) {
@@ -429,5 +487,5 @@
     return n === 1 ? parts[0] : parts[0] + ', ' + parts[parts.length - 1];
   }
 
-  window.Gedcom = { decode, build, parseDate, formatDate, placeShort, EVENT_LABELS, MONTH_NAMES, gender };
+  window.Gedcom = { decode, build, fileName, parseDate, formatDate, placeShort, EVENT_LABELS, MONTH_NAMES, gender };
 })();

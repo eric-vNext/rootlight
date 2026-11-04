@@ -7,6 +7,8 @@
     tree: null,
     focusId: null,
     homeId: null,
+    photos: [], // image files the user supplied: { path, name, size, blob() }
+    photoMatch: null, // Media.match result: { byPerson, report } pairing people with those files
     view: 'tree',
     trail: [],
     pathIds: null, // highlighted relationship path
@@ -24,6 +26,9 @@
       if (!tree.people.size) { U.toast('No people found in that file — is it a GEDCOM?'); return; }
       this.tree = tree;
       this.fileName = name;
+      this.photos = opts.photos || [];
+      if (!opts.keepPhotos) Photos.reset();
+      this.matchPhotos();
       const home = (opts.home && tree.get(opts.home)) || tree.guessHome();
       this.homeId = home.id;
       this.trail = [];
@@ -36,7 +41,41 @@
       this.go(home.id, { quiet: true });
       if (opts.save !== false) Store.save({ name, text, home: home.id });
       const s = tree.stats();
-      U.toast(`✦ ${s.count.toLocaleString()} people across ${s.minYear && s.maxYear ? `${s.maxYear - s.minYear} years` : 'the ages'} — welcome, ${U.esc(home.given.split(' ')[0] || home.name)}'s family`, 3800);
+      const pics = this.photos.length ? ` · ${this.photoSummary()}` : '';
+      U.toast(`✦ ${s.count.toLocaleString()} people across ${s.minYear && s.maxYear ? `${s.maxYear - s.minYear} years` : 'the ages'} — welcome, ${U.esc(home.given.split(' ')[0] || home.name)}'s family${pics}`, 3800);
+    },
+
+    // Photos supplied after the tree is open. Adding the same path again replaces it.
+    addPhotos(list) {
+      const byPath = new Map(this.photos.map(p => [p.path, p]));
+      for (const p of list) byPath.set(p.path, p);
+      this.photos = [...byPath.values()];
+      this.matchPhotos();
+      U.toast(`📷 ${this.photoSummary()}`, 4200);
+      for (const k of Object.keys(VIEWS)) this.dirty.add(k);
+      this.renderView();
+      Panel.render(this.focus);
+    },
+
+    matchPhotos() {
+      this.photoMatch = this.photos.length ? Media.match(this.tree, this.photos) : null;
+      if (this.photoMatch) Photos.attach(this.photos, this.photoMatch);
+    },
+
+    // One line for the toast. Phase 6 turns the report into richer guidance.
+    photoSummary() {
+      const r = this.photoMatch && this.photoMatch.report, n = this.photos.length;
+      const files = `${n.toLocaleString()} photo file${n === 1 ? '' : 's'}`;
+      if (!r) return files;
+      if (!r.refs) return `${files} ready, but this file doesn't mention any photos`;
+      if (!r.matched) return `none of the ${r.refs.toLocaleString()} photos in this file matched those ${files} — is it the right folder?`;
+      return `matched ${r.matched.toLocaleString()} of ${r.refs.toLocaleString()} photos in this file`;
+    },
+
+    // The picture to draw for a person, or null: { ref, photo, how } where photo.blob() yields the image.
+    photoOf(id) {
+      const rec = this.photoMatch && this.photoMatch.byPerson.get(id);
+      return rec ? rec.cover : null;
     },
 
     go(id, opts = {}) {
@@ -164,9 +203,13 @@
     open() {
       return new Promise(res => {
         try {
-          const req = indexedDB.open('rootlight', 1);
-          req.onupgradeneeded = () => req.result.createObjectStore('files');
-          req.onsuccess = () => { this.db = req.result; res(this.db); };
+          const req = indexedDB.open('rootlight', 2);
+          req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains('files')) db.createObjectStore('files');
+            if (!db.objectStoreNames.contains(Photos.STORE)) db.createObjectStore(Photos.STORE, { keyPath: 'path' });
+          };
+          req.onsuccess = () => { this.db = req.result; Photos.setDb(this.db); res(this.db); };
           req.onerror = () => res(null);
         } catch (e) { res(null); }
       });
@@ -192,11 +235,22 @@
   };
 
   // ---------- file loading ----------
-  function readFile(file) {
-    const reader = new FileReader();
-    reader.onload = () => App.load(Gedcom.decode(reader.result), file.name);
-    reader.onerror = () => U.toast('Could not read that file.');
-    reader.readAsArrayBuffer(file);
+  // Opens whatever the user gave us: a GEDCOM, a .gdz/.zip bundle, a folder, loose photos, or a mix.
+  async function openEntries(entries) {
+    if (!entries.length) return;
+    let found;
+    try { found = await Media.classify(entries); }
+    catch (e) { console.error(e); U.toast('Could not read those files.'); return; }
+    if (found.ged) {
+      try {
+        const buf = await (await found.ged.blob()).arrayBuffer();
+        App.load(Gedcom.decode(buf), found.ged.name, { photos: found.photos });
+      } catch (e) { console.error(e); U.toast('Could not read that file.'); }
+    } else if (found.photos.length && App.tree) {
+      App.addPhotos(found.photos);
+    } else {
+      U.toast(found.note || (found.photos.length ? 'Open a GEDCOM file first, then add photos.' : 'No GEDCOM file or photos found there.'));
+    }
   }
 
   // ---------- search palette ----------
@@ -255,7 +309,7 @@
         const rel = App.home && App.tree.relationship(App.home, p);
         const sub = [rel && rel.label !== 'self' ? rel.label : rel ? 'home' : '', App.tree.lifespan(p), p.birth && p.birth.place ? Gedcom.placeShort(p.birth.place, 2) : ''].filter(Boolean).join(' · ');
         return `<li class="${i === this.sel ? 'sel' : ''}" data-i="${i}"><button class="person-chip" data-i="${i}">
-          <span class="dot" style="background:${U.avatarBg(p)}">${U.esc(U.initials(p))}</span>
+          ${U.dot(p)}
           <span><div class="nm">${hl(p.name)}</div><div class="sub">${hl(sub)}</div></span></button></li>`;
       }).join('');
       const s = ul.querySelector('.sel');
@@ -311,7 +365,19 @@
   // ---------- wiring ----------
   function wire() {
     const fileInput = $('#file-input');
-    fileInput.addEventListener('change', () => { if (fileInput.files[0]) readFile(fileInput.files[0]); fileInput.value = ''; });
+    fileInput.addEventListener('change', () => { openEntries(Media.fromFileList(fileInput.files)); fileInput.value = ''; });
+
+    // add photos: a folder, or a zip / loose images
+    const menu = $('#photos-menu'), photosBtn = $('#photos-btn');
+    const setMenu = open => { menu.hidden = !open; photosBtn.setAttribute('aria-expanded', open); };
+    photosBtn.addEventListener('click', e => { e.stopPropagation(); setMenu(menu.hidden); });
+    document.addEventListener('click', e => { if (!menu.hidden && !e.target.closest('.menu-wrap')) setMenu(false); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden) setMenu(false); });
+    for (const [btn, input] of [['#pick-folder', '#photo-folder'], ['#pick-files', '#photo-files']]) {
+      const el = $(input);
+      $(btn).addEventListener('click', () => { setMenu(false); el.click(); });
+      el.addEventListener('change', () => { openEntries(Media.fromFileList(el.files)); el.value = ''; });
+    }
     $('#dropzone').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } });
     $('#try-sample').addEventListener('click', () => App.load(window.SAMPLE_GEDCOM, 'The Ashworth Family (sample).ged', { home: 'I1' }));
     $('#open-btn').addEventListener('click', () => fileInput.click());
@@ -323,8 +389,9 @@
     addEventListener('dragover', e => e.preventDefault());
     addEventListener('drop', e => {
       e.preventDefault(); dragDepth = 0; $('#dropzone').classList.remove('over');
-      const f = e.dataTransfer.files[0];
-      if (f) readFile(f);
+      // the DataTransfer empties once this handler yields, so grab the folder entries now
+      const dropped = Media.entriesOfDrop(e.dataTransfer);
+      Media.fromDrop(dropped).then(openEntries);
     });
 
     document.querySelectorAll('.views button').forEach(b => b.addEventListener('click', () => App.setView(b.dataset.view)));
@@ -400,12 +467,14 @@
     if (innerWidth < 760) $('#app').classList.add('panel-closed');
     sky();
     wire();
+    Photos.watch();
     await Store.open();
     const rec = await Store.load();
     if (rec && rec.text) {
       $('#resume').hidden = false;
       $('#resume-name').textContent = rec.name.replace(/\.(ged|gedcom)$/i, '');
-      $('#resume').addEventListener('click', () => App.load(rec.text, rec.name, { home: rec.home, save: false }));
+      $('#resume').addEventListener('click', async () =>
+        App.load(rec.text, rec.name, { home: rec.home, save: false, photos: await Photos.restore(), keepPhotos: true }));
     }
     // ?sample in the URL jumps straight in (handy for demos)
     if (/[?&]sample\b/.test(location.search)) $('#try-sample').click();

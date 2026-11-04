@@ -29,10 +29,10 @@
       <h1>Rootlight</h1>
       <p class="tag">Every family is a constellation. Open a GEDCOM file and wander through yours.</p>
       <label id="dropzone" class="dropzone" tabindex="0">
-        <input id="file-input" type="file" accept=".ged,.gedcom,.txt" hidden>
+        <input id="file-input" type="file" accept=".ged,.gedcom,.txt,.gdz,.zip,image/*" multiple hidden>
         <span class="dz-icon">⇪</span>
-        <span class="dz-main">Drop a <b>.ged</b> file here</span>
-        <span class="dz-sub">or click to choose one · it never leaves your computer</span>
+        <span class="dz-main">Drop a <b>.ged</b> file, a <b>.gdz</b> bundle or a photo folder here</span>
+        <span class="dz-sub">or click to choose · photos and files never leave your computer</span>
       </label>
       <div class="welcome-actions">
         <button id="try-sample" class="btn ghost">✦ Explore a sample family</button>
@@ -57,6 +57,16 @@
         <button id="dice" class="icon-btn" title="Surprise me — jump to a random relative (R)">🎲</button>
         <button id="home-btn" class="icon-btn" title="Go home (H)">⌂</button>
         <button id="theme-btn" class="icon-btn" title="Switch night / parchment">☾</button>
+        <div class="menu-wrap">
+          <button id="photos-btn" class="icon-btn" title="Add photos" aria-haspopup="true" aria-expanded="false">📷</button>
+          <div id="photos-menu" class="menu" hidden>
+            <button id="pick-folder">Choose a photo folder…</button>
+            <button id="pick-files">Choose a zip or photos…</button>
+            <p>Or drop a folder, <b>.zip</b> or <b>.gdz</b> anywhere on this page.</p>
+          </div>
+          <input id="photo-folder" type="file" webkitdirectory multiple hidden>
+          <input id="photo-files" type="file" accept=".zip,.gdz,image/*" multiple hidden>
+        </div>
         <button id="open-btn" class="icon-btn" title="Open another file">⇪</button>
       </div>
     </header>
@@ -95,6 +105,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
   <script src="js/gedcom.js"></script>
   <script src="js/sample.js"></script>
+  <script src="js/media.js"></script>
+  <script src="js/photos.js"></script>
   <script src="js/world.js"></script>
   <script src="js/util.js"></script>
   <script src="js/views/tree.js"></script>

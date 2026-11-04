@@ -24,6 +24,8 @@ Then visit http://localhost:8765. Add `?sample` to the URL to jump straight into
 | 4 | **Timeline** | A cinematic river of time. Lifespans flow beneath eras and 50 key world events, each shown with a public-domain photograph, plus who in the family was alive to see it and how old they were. Drag the gold marker, tap a medallion, or press ▶ to play through history. |
 | 5 | **Almanac** | Stats, fun facts, a surname cloud, a birth-month wheel, and "on this day". |
 
+**Photos.** GEDCOM files only name their pictures, so give Rootlight the files: open a `.gdz` or `.zip` bundle, drop or choose a photo folder, or use the 📷 button after opening a file. Photos replace initials on tree cards, in search, on the timeline and in the story panel, which also gets a gallery and viewer. Each picture is shrunk once and kept in your browser (IndexedDB), so reopening the file brings them back. Originals are never stored or uploaded.
+
 The **story panel** writes a short biography for each person. It also shows their family and a life-and-times timeline, plus how they're related to the home person.
 
 ## Keyboard
@@ -35,6 +37,9 @@ In search, `⇧↵` asks "how are we related?" and lights up the path between th
 ## Files
 
 - `js/gedcom.js`: the GEDCOM parser (UTF-8/UTF-16/ANSI, CONC/CONT, note records), the family model, and the relationship calculator
+- `js/media.js`: opens `.gdz`/`.zip` bundles, photo folders and loose images (zip reader included, no libraries), and matches photo references to the files supplied
+- `js/photos.js`: shrinks and stores matched photos, fills avatars, and runs the photo viewer
+- `test/`: `node test/media.test.js` and `node test/zip.test.js`
 - `js/world.js`: eras, world events, and the Wikimedia Commons image lookup
 - `js/views/*.js`: one file per view
 - `js/panel.js`: the story panel

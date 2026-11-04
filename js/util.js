@@ -21,6 +21,14 @@
     const s = (p.surname || '').trim()[0] || '';
     return (g + s).toUpperCase() || '?';
   }
+  // data-photo makes js/photos.js swap the person's picture in once it is ready; the initials stay underneath until then
+  function photoAttr(p) {
+    const ph = window.App && App.tree && App.photoOf(p.id);
+    return ph ? ` data-photo="${esc(ph.photo.path)}"` : '';
+  }
+  function dot(p, cls = 'dot') {
+    return `<span class="${cls}" style="background:${avatarBg(p)}"${photoAttr(p)}>${esc(initials(p))}</span>`;
+  }
   const centuryColor = d3.scaleSequential(d3.interpolateRgbBasis(['#6a5acd', '#3f8fd2', '#2bb39a', '#a6c34a', '#f2b544', '#ec6f5a', '#d6497b']));
 
   // ---------- tooltip ----------
@@ -56,7 +64,7 @@
   function personChip(tree, p, sub) {
     const life = tree.lifespan(p);
     return `<button class="person-chip" data-goto="${esc(p.id)}">
-      <span class="dot" style="background:${avatarBg(p)}">${esc(initials(p))}</span>
+      ${dot(p)}
       <span><div class="nm">${esc(p.name)}</div><div class="sub">${esc([sub, life].filter(Boolean).join(' · '))}</div></span>
     </button>`;
   }
@@ -70,5 +78,5 @@
     return `<b>${esc(p.name)}</b>${lines.map(l => `<div class="t-sub">${esc(l)}</div>`).join('')}${extra ? `<div style="color:var(--gold);margin-top:3px">${esc(extra)}</div>` : ''}`;
   }
 
-  window.U = { esc, hash, css, isNight, surnameColor, sexColor, avatarBg, initials, centuryColor, tip, moveTip, hideTip, toast, WORLD, personChip, tipHtml };
+  window.U = { esc, hash, css, isNight, surnameColor, sexColor, avatarBg, initials, photoAttr, dot, centuryColor, tip, moveTip, hideTip, toast, WORLD, personChip, tipHtml };
 })();

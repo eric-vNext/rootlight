@@ -10,6 +10,8 @@ window.TreeView = (function () {
   function init(container, ctx) {
     el = container; app = ctx;
     svg = d3.select(el).append('svg');
+    svg.append('defs').append('clipPath').attr('id', 'tree-round').attr('clipPathUnits', 'objectBoundingBox')
+      .append('circle').attr('cx', .5).attr('cy', .5).attr('r', .5);
     root = svg.append('g');
     gLabels = root.append('g');
     gLinks = root.append('g');
@@ -157,6 +159,9 @@ window.TreeView = (function () {
         g.append('rect').attr('class', 'bg').attr('x', -W / 2).attr('y', -H / 2).attr('width', W).attr('height', H).attr('rx', 14);
         g.append('rect').attr('class', 'strip').attr('x', -W / 2).attr('y', -H / 2 + 12).attr('width', 3.5).attr('height', H - 24).attr('rx', 2);
         g.append('circle').attr('class', 'av').attr('cx', -W / 2 + 28).attr('cy', 6).attr('r', 16);
+        g.append('image').attr('class', 'avph').attr('x', -W / 2 + 12).attr('y', -10).attr('width', 32).attr('height', 32)
+          .attr('preserveAspectRatio', 'xMidYMid slice').attr('clip-path', 'url(#tree-round)').style('display', 'none');
+        g.append('circle').attr('class', 'avr').attr('cx', -W / 2 + 28).attr('cy', 6).attr('r', 16).attr('fill', 'none');
         g.append('text').attr('class', 'avt').attr('x', -W / 2 + 28).attr('y', 11).attr('text-anchor', 'middle').style('font', '500 13px Fraunces, serif').style('fill', '#fff');
         g.append('text').attr('class', 'rel').attr('x', -W / 2 + 16).attr('y', -H / 2 + 15);
         g.append('text').attr('class', 'nm').attr('x', -W / 2 + 54).attr('y', -2);
@@ -174,6 +179,8 @@ window.TreeView = (function () {
       if (d.ghost) {
         g.select('.strip').attr('fill', 'none');
         g.select('.av').attr('fill', 'none').attr('stroke', U.css('--line-strong')).attr('stroke-dasharray', '3 3');
+        g.select('.avph').style('display', 'none');
+        g.select('.avr').attr('stroke', 'none');
         g.select('.avt').text('?').style('fill', U.css('--ink-3'));
         g.select('.rel').text('');
         g.select('.nm').text(d.ghost === 'father' ? 'Unknown father' : 'Unknown mother');
@@ -184,8 +191,18 @@ window.TreeView = (function () {
       const p = d.p;
       const rel = home && home.id !== p.id ? t.relationship(home, p) : null;
       g.select('.strip').attr('fill', U.sexColor(p));
-      g.select('.av').attr('fill', U.surnameColor(p.surname, U.isNight() ? 40 : 45)).attr('stroke', d.focus ? U.css('--gold') : 'none').attr('stroke-width', 2).attr('stroke-dasharray', null);
+      g.select('.av').attr('fill', U.surnameColor(p.surname, U.isNight() ? 40 : 45)).attr('stroke', 'none').attr('stroke-dasharray', null);
+      g.select('.avr').attr('stroke', d.focus ? U.css('--gold') : 'none').attr('stroke-width', 2);
       g.select('.avt').text(U.initials(p)).style('fill', '#fff');
+      // a matched photo covers the initials once its thumbnail is ready
+      const ph = app.photoOf(p.id), img = g.select('.avph');
+      if (ph) {
+        Photos.thumb(ph.photo.path).then(url => {
+          if (!url || g.datum().p !== p) return;
+          img.attr('href', url).style('display', null);
+          g.select('.avt').attr('opacity', 0);
+        });
+      } else { img.style('display', 'none').attr('href', null); g.select('.avt').attr('opacity', null); }
       const relEl = g.select('.rel').attr('textLength', null).attr('lengthAdjust', null)
         .text(p.id === app.homeId ? '⌂ home' : rel ? rel.label : d.spouse ? 'spouse' : '');
       // the label spans the whole tile; squeeze it only if it is still too long
