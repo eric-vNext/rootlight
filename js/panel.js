@@ -78,7 +78,7 @@
     const by = t.birthYear(p);
     if (by != null) {
       const ev = U.WORLD.find(w => Math.abs(w.y - by) <= 1 || (w.end && by >= w.y && by <= w.end));
-      if (ev) out.push(`<span style="color:var(--ink-2)">${He} arrived in the world around the time of the ${esc(ev.label.replace(/^[A-Z]/, c => c.toLowerCase()).replace(/^first /i, 'First ').replace(/^second /i, 'Second '))}.</span>`);
+      if (ev) out.push(`<span class="aside">${He} arrived in the world around the time of the ${esc(ev.label.replace(/^[A-Z]/, c => c.toLowerCase()).replace(/^first /i, 'First ').replace(/^second /i, 'Second '))}.</span>`);
     }
     return out.join(' ');
   }
@@ -107,12 +107,12 @@
     }
     if (by != null && dy != null) for (const w of U.WORLD) if (w.y > by && w.y <= dy) rows.push({ y: w.y, what: w.label, world: true, age: ageAt(w.y) });
     rows.sort((a, b) => (a.y ?? 9999) - (b.y ?? 9999));
-    if (!rows.length) return '<p style="color:var(--ink-3)">No dated events yet.</p>';
+    if (!rows.length) return '<p class="empty-note">No dated events yet.</p>';
     return `<ul class="facts">${rows.map(r => `
       <li class="${r.world ? 'world-ev' : ''}">
         <span class="yr">${r.y ?? '—'}</span>
         <span>
-          ${r.world ? `<div class="world">${esc(r.what)}${r.age != null ? ` · age ${r.age}` : ''}</div>` : `<div class="what">${r.id ? `<a data-goto="${esc(r.id)}" style="cursor:pointer">${esc(r.what)}</a>` : esc(r.what)}</div>`}
+          ${r.world ? `<div class="world">${esc(r.what)}${r.age != null ? ` · age ${r.age}` : ''}</div>` : `<div class="what">${r.id ? `<a data-goto="${esc(r.id)}">${esc(r.what)}</a>` : esc(r.what)}</div>`}
           ${!r.world && (r.where || (r.when && r.when !== String(r.y)) || r.age != null) ? `<div class="where">${esc([r.when && r.when !== String(r.y) ? r.when : '', r.where].filter(Boolean).join(' · '))}${r.age != null && !r.world ? `${r.where || (r.when && r.when !== String(r.y)) ? ' · ' : ''}age ${r.age}` : ''}</div>` : ''}
         </span>
       </li>`).join('')}</ul>`;
@@ -130,7 +130,7 @@
     }
     const sibs = t.siblings(p);
     if (sibs.length) groups.push([`Siblings (${sibs.length})`, sibs.map(x => U.personChip(t, x, Gedcom.gender(x, 'Brother', 'Sister', 'Sibling')))]);
-    if (!groups.length) return '<p style="color:var(--ink-3)">No family links recorded. A lone star!</p>';
+    if (!groups.length) return '<p class="empty-note">No family links recorded. A lone star!</p>';
     return groups.map(([label, items]) => `<div class="kin-group"><div class="kin-label">${esc(label)}</div><div class="kin">${items.join('')}</div></div>`).join('');
   }
 
@@ -138,13 +138,13 @@
     const { a, b, path } = info;
     const rel = t.relationship(a, b);
     const steps = path.map((s, i) => {
-      const via = i > 0 ? `<div class="via">↓ ${esc(s.rel === 'parent' ? `whose ${Gedcom.gender(s.person, 'father', 'mother', 'parent')} is` : s.rel === 'child' ? `whose ${Gedcom.gender(s.person, 'son', 'daughter', 'child')} is` : `married to`)}</div>` : '';
+      const via = i > 0 ? `<div class="via">${esc(s.rel === 'parent' ? `whose ${Gedcom.gender(s.person, 'father', 'mother', 'parent')} is` : s.rel === 'child' ? `whose ${Gedcom.gender(s.person, 'son', 'daughter', 'child')} is` : `married to`)}</div>` : '';
       return via + `<div class="step">${U.personChip(t, s.person, '')}</div>`;
     }).join('');
     return `<div class="p-section"><h3>How they're connected</h3><div class="path-box">
-      <div class="serif" style="font-size:16px">${link(b)} is ${first(a)}'s <b style="color:var(--gold)">${esc(rel ? rel.label : 'relative')}</b></div>
-      ${rel && rel.commonAncestor ? `<div style="color:var(--ink-3);font-size:12px;margin-top:4px">Common ancestor: ${link(rel.commonAncestor)}</div>` : ''}
-      <div style="color:var(--ink-3);font-size:12px;margin-top:2px">${path.length - 1} step${path.length === 2 ? '' : 's'} apart</div>
+      <div class="path-lede">${link(b)} is ${first(a)}'s <b>${esc(rel ? rel.label : 'relative')}</b></div>
+      ${rel && rel.commonAncestor ? `<div class="path-note">Common ancestor: ${link(rel.commonAncestor)}</div>` : ''}
+      <div class="path-note">${path.length - 1} step${path.length === 2 ? '' : 's'} apart</div>
       <div class="path-steps">${steps}</div></div></div>`;
   }
 
@@ -168,24 +168,24 @@
     const el = document.getElementById('panel');
     const home = App.home;
     const rel = home && home.id !== p.id ? t.relationship(home, p) : null;
-    const accent = U.surnameColor(p.surname);
     const b = p.birth && p.birth.date, d = p.death && p.death.date;
+    // the vital dates, set as two ledger rows
     const life = [];
-    if (b || p.birth) life.push(`✶ ${esc(fd(b) || 'unknown')}`);
-    if (d || p.death) life.push(`✝ ${esc(fd(d) || 'unknown')}`);
-    else if (p.living) life.push('living');
+    if (b || p.birth) life.push(['Born', fd(b) || 'unknown']);
+    if (d || p.death) life.push(['Died', fd(d) || 'unknown']);
+    else if (p.living) life.push(['Now', 'living']);
     el.innerHTML = `
-      <div class="p-hero" style="--accent:${accent};--accent-line:${accent}">
-        <div class="p-avatar ${p.id === App.homeId ? 'home' : ''}" style="background:${U.avatarBg(p)}"${U.photoAttr(p)}>${esc(U.initials(p))}</div>
+      <div class="p-hero">
+        <div class="p-avatar ${p.id === App.homeId ? 'home' : ''}" style="--h:${U.surnameColor(p.surname)}"${U.photoAttr(p)}>${esc(U.initials(p))}</div>
         <h2 class="p-name">${esc(p.given || 'Unknown')} <span class="sur">${esc(p.surname)}</span></h2>
-        ${p.nick ? `<div style="color:var(--ink-3)">“${esc(p.nick)}”</div>` : ''}
-        <div class="p-life">${life.map(l => `<span>${l}</span>`).join('')}</div>
-        ${p.id === App.homeId ? `<span class="p-rel">⌂ Home person</span>` : rel ? `<span class="p-rel" title="Relationship to ${esc(home.name)}">${first(home)}'s ${esc(rel.label)}</span>` : home ? `<span class="p-rel" style="background:var(--surface-2);color:var(--ink-3)">No known link to ${first(home)}</span>` : ''}
+        ${p.nick ? `<div class="p-nick">“${esc(p.nick)}”</div>` : ''}
+        ${p.id === App.homeId ? `<span class="p-rel home">Home person</span>` : rel ? `<span class="p-rel" title="Relationship to ${esc(home.name)}">${first(home)}'s ${esc(rel.label)}</span>` : home ? `<span class="p-rel none">No known link to ${first(home)}</span>` : ''}
+        ${life.length ? `<dl class="p-life">${life.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>` : ''}
         <div class="p-actions">
-          ${p.id !== App.homeId ? `<button class="chip" data-act="path">⇄ Path from ${first(home)}</button>` : ''}
-          <button class="chip" data-act="relate">⚯ Compare with…</button>
-          ${p.id !== App.homeId ? `<button class="chip" data-act="home">⌂ Make home</button>` : ''}
-          <button class="chip" data-act="close" style="margin-left:auto" title="Close panel (S)">✕</button>
+          ${p.id !== App.homeId ? `<button class="chip" data-act="path">Path from ${first(home)}</button>` : ''}
+          <button class="chip" data-act="relate">Compare with…</button>
+          ${p.id !== App.homeId ? `<button class="chip" data-act="home">Make home</button>` : ''}
+          <button class="chip close" data-act="close" title="Close panel (S)">Close</button>
         </div>
       </div>
       ${opts.pathTo ? pathBox(t, opts.pathTo) : ''}
@@ -194,7 +194,7 @@
       ${p.notes.length ? `<div class="p-section"><h3>Notes</h3>${p.notes.map(n => `<p class="notes">${esc(n)}</p>`).join('')}</div>` : ''}
       <div class="p-section"><h3>Family</h3>${kin(t, p)}</div>
       <div class="p-section"><h3>Life &amp; times</h3>${facts(t, p)}</div>
-      <div class="p-section" style="color:var(--ink-3);font-size:11px">GEDCOM id ${esc(p.id)}</div>`;
+      <div class="p-section p-meta">GEDCOM id ${esc(p.id)}</div>`;
     el.scrollTop = 0;
     const shots = shotsOf(p);
     el.querySelectorAll('[data-shot]').forEach(btn => btn.addEventListener('click', () => Photos.open(shots, +btn.dataset.shot)));

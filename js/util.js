@@ -6,16 +6,15 @@
   const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const isNight = () => document.documentElement.dataset.theme !== 'parchment';
 
-  // Each surname gets its own stable hue, so families read as color bands.
-  function surnameColor(surname, l) {
+  // Each surname gets its own stable hue, so families read as color bands. The hue is all that varies: lightness and
+  // chroma are held low and even so no family shouts. tone 'line' is for hairlines, rings and type on the page
+  // (it follows the theme); tone 'fill' is a deeper ink for solid areas that carry light lettering.
+  function surnameColor(surname, tone) {
     const h = hash((surname || '?').toLowerCase()) % 360;
-    return `hsl(${h} ${isNight() ? 55 : 45}% ${l ?? (isNight() ? 58 : 42)}%)`;
+    if (tone === 'fill') return `oklch(0.5 0.08 ${h})`;
+    return isNight() ? `oklch(0.72 0.065 ${h})` : `oklch(0.45 0.075 ${h})`;
   }
   function sexColor(p) { return p.sex === 'M' ? css('--male') : p.sex === 'F' ? css('--female') : css('--unknown'); }
-  function avatarBg(p) {
-    const a = surnameColor(p.surname, isNight() ? 42 : 40), b = surnameColor(p.given, isNight() ? 30 : 30);
-    return `linear-gradient(135deg, ${a}, ${b})`;
-  }
   function initials(p) {
     const g = (p.given || '').trim()[0] || '';
     const s = (p.surname || '').trim()[0] || '';
@@ -27,9 +26,12 @@
     return ph ? ` data-photo="${esc(ph.photo.path)}"` : '';
   }
   function dot(p, cls = 'dot') {
-    return `<span class="${cls}" style="background:${avatarBg(p)}"${photoAttr(p)}>${esc(initials(p))}</span>`;
+    return `<span class="${cls}" style="--h:${surnameColor(p.surname)}"${photoAttr(p)}>${esc(initials(p))}</span>`;
   }
-  const centuryColor = d3.scaleSequential(d3.interpolateRgbBasis(['#6a5acd', '#3f8fd2', '#2bb39a', '#a6c34a', '#f2b544', '#ec6f5a', '#d6497b']));
+  // 0..1 → a muted ramp from iron blue through moss and ochre to oxide red
+  const centuryColor = v => `oklch(${(0.46 + 0.1 * Math.sin(Math.PI * v)).toFixed(3)} 0.085 ${Math.round(255 - 225 * Math.max(0, Math.min(1, v)))})`;
+  // n evenly spaced inks of equal weight, for categories
+  const inkScale = n => d3.range(n).map(i => `oklch(${i % 2 ? 0.56 : 0.47} 0.085 ${Math.round(35 + i * 360 / Math.max(n, 1)) % 360})`);
 
   // ---------- tooltip ----------
   const tipEl = () => document.getElementById('tooltip');
@@ -75,8 +77,8 @@
     if (b) lines.push(`b. ${Gedcom.formatDate(b.date) || '?'}${b.place ? ' · ' + Gedcom.placeShort(b.place) : ''}`);
     if (d) lines.push(`d. ${Gedcom.formatDate(d.date) || '?'}${d.place ? ' · ' + Gedcom.placeShort(d.place) : ''}`);
     if (p.occupation) lines.push(p.occupation);
-    return `<b>${esc(p.name)}</b>${lines.map(l => `<div class="t-sub">${esc(l)}</div>`).join('')}${extra ? `<div style="color:var(--gold);margin-top:3px">${esc(extra)}</div>` : ''}`;
+    return `<b>${esc(p.name)}</b>${lines.map(l => `<div class="t-sub">${esc(l)}</div>`).join('')}${extra ? `<div class="t-rel">${esc(extra)}</div>` : ''}`;
   }
 
-  window.U = { esc, hash, css, isNight, surnameColor, sexColor, avatarBg, initials, photoAttr, dot, centuryColor, tip, moveTip, hideTip, toast, WORLD, personChip, tipHtml };
+  window.U = { esc, hash, css, isNight, surnameColor, sexColor, initials, photoAttr, dot, centuryColor, inkScale, tip, moveTip, hideTip, toast, WORLD, personChip, tipHtml };
 })();

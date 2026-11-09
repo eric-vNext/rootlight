@@ -42,7 +42,7 @@
       if (opts.save !== false) Store.save({ name, text, home: home.id });
       const s = tree.stats();
       const pics = this.photos.length ? ` · ${this.photoSummary()}` : '';
-      U.toast(`✦ ${s.count.toLocaleString()} people across ${s.minYear && s.maxYear ? `${s.maxYear - s.minYear} years` : 'the ages'} — welcome, ${U.esc(home.given.split(' ')[0] || home.name)}'s family${pics}`, 3800);
+      U.toast(`${s.count.toLocaleString()} people across ${s.minYear && s.maxYear ? `${s.maxYear - s.minYear} years` : 'the ages'}. Welcome, ${U.esc(home.given.split(' ')[0] || home.name)}'s family${pics}`, 3800);
     },
 
     // Photos supplied after the tree is open. Adding the same path again replaces it.
@@ -51,7 +51,7 @@
       for (const p of list) byPath.set(p.path, p);
       this.photos = [...byPath.values()];
       this.matchPhotos();
-      U.toast(`📷 ${this.photoSummary()}`, 4200);
+      U.toast(`${this.photoSummary().replace(/^./, c => c.toUpperCase())}`, 4200);
       for (const k of Object.keys(VIEWS)) this.dirty.add(k);
       this.renderView();
       Panel.render(this.focus);
@@ -100,7 +100,7 @@
     setHome(id) {
       this.homeId = id;
       Store.updateHome(id);
-      U.toast(`⌂ ${U.esc(this.tree.get(id).name)} is now home. Relationships are shown from their point of view.`);
+      U.toast(`${U.esc(this.tree.get(id).name)} is now home. Relationships are shown from their point of view.`);
       for (const k of Object.keys(VIEWS)) this.dirty.add(k);
       this.renderView();
       Panel.render(this.focus);
@@ -154,7 +154,7 @@
       const pool = rich.length > 5 ? rich : all;
       const p = pool[Math.floor(Math.random() * pool.length)];
       const rel = this.home && this.tree.relationship(this.home, p);
-      U.toast(`🎲 Meet ${U.esc(p.name)}${rel && rel.label !== 'self' ? ` — ${U.esc(this.home.given.split(' ')[0])}'s ${U.esc(rel.label)}` : ''}`);
+      U.toast(`Meet ${U.esc(p.name)}${rel && rel.label !== 'self' ? ` — ${U.esc(this.home.given.split(' ')[0])}'s ${U.esc(rel.label)}` : ''}`);
       this.go(p.id);
     },
 
@@ -190,7 +190,6 @@
     toggleTheme() {
       const r = document.documentElement;
       r.dataset.theme = r.dataset.theme === 'parchment' ? 'night' : 'parchment';
-      $('#theme-btn').textContent = r.dataset.theme === 'parchment' ? '☀' : '☾';
       try { localStorage.setItem('rootlight.theme', r.dataset.theme); } catch (e) { }
       for (const k of Object.keys(VIEWS)) this.dirty.add(k);
       if (this.tree) { this.renderView(); Panel.render(this.focus); }
@@ -460,7 +459,7 @@
   async function start() {
     try {
       const th = localStorage.getItem('rootlight.theme');
-      if (th) { document.documentElement.dataset.theme = th; $('#theme-btn').textContent = th === 'parchment' ? '☀' : '☾'; }
+      if (th) document.documentElement.dataset.theme = th;
       const v = localStorage.getItem('rootlight.view');
       if (v && VIEWS[v]) App.view = v;
     } catch (e) { }

@@ -11,7 +11,7 @@ window.FanView = (function () {
     ctl.html(`
       <div class="seg" data-g="mode">${Object.entries(MODES).map(([k, v]) => `<button data-v="${k}" class="${k === mode ? 'on' : ''}">${v}</button>`).join('')}</div>
       <div class="seg" data-g="sweep"><button data-v="240" class="on">Fan</button><button data-v="360">Circle</button></div>
-      <div class="seg" data-g="gens"><button data-v="4">4</button><button data-v="5">5</button><button data-v="6" class="on">6</button><button data-v="7">7</button><button data-v="8">8 gen</button></div>`);
+      <div class="seg" data-g="gens"><button data-v="4">4</button><button data-v="5">5</button><button data-v="6" class="on">6</button><button data-v="7">7</button><button data-v="8">8</button><span class="seg-label" style="padding:0 10px 0 2px">gen</span></div>`);
     ctl.selectAll('.seg button').on('click', function () {
       const grp = this.parentNode.dataset.g, v = this.dataset.v;
       if (grp === 'mode') mode = v; else if (grp === 'sweep') sweep = +v; else gens = +v;
@@ -68,18 +68,19 @@ window.FanView = (function () {
 
     // colour scales
     const countries = [...new Set(slots.filter(s => s.p).map(s => country(s.p)).filter(Boolean))];
-    const cScale = d3.scaleOrdinal().domain(countries).range(['#e07a5f', '#3d9fd6', '#81b29a', '#f2cc8f', '#b48ead', '#e6a157', '#5cb8b2', '#d1607e', '#8fa9e8', '#c2c95b', '#a87554', '#6f8f6b']);
+    const cScale = d3.scaleOrdinal().domain(countries).range(U.inkScale(12));
     const years = slots.filter(s => s.p).map(s => t.estBirth(s.p)).filter(v => v != null);
     const yExt = d3.extent(years.concat(t.estBirth(focus) ?? []));
     const colorOf = s => {
       if (!s.p) return null;
-      if (mode === 'surname') return U.surnameColor(s.p.surname, U.isNight() ? 48 : 52);
+      if (mode === 'surname') return U.surnameColor(s.p.surname, 'fill');
       if (mode === 'country') { const c = country(s.p); return c ? cScale(c) : U.css('--ink-3'); }
       if (mode === 'century') { const y = t.estBirth(s.p); return y == null ? U.css('--ink-3') : U.centuryColor((y - yExt[0]) / ((yExt[1] - yExt[0]) || 1)); }
-      return d3.color(s.line === 'paternal' ? U.css('--male') : U.css('--female')).darker(s.gen * 0.12).toString();
+      // the two lines of descent, each ring a little deeper than the last
+      return `oklch(${(0.56 - s.gen * 0.022).toFixed(3)} 0.075 ${s.line === 'paternal' ? 245 : 25})`;
     };
 
-    const arc = d3.arc().innerRadius(d => d.r1).outerRadius(d => d.r2).startAngle(d => d.a1).endAngle(d => d.a2).padAngle(0.004).cornerRadius(3);
+    const arc = d3.arc().innerRadius(d => d.r1).outerRadius(d => d.r2).startAngle(d => d.a1).endAngle(d => d.a2).padAngle(0.003).cornerRadius(1);
     const dur = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 700;
 
     const arcs = g.selectAll('path.fan-arc').data(slots, d => `${d.gen}-${d.i}`);
@@ -147,22 +148,22 @@ window.FanView = (function () {
     // centre
     g.selectAll('.fan-center').remove();
     const c = g.append('g').attr('class', 'fan-center').style('cursor', 'pointer').on('click', () => app.setView('tree'));
-    c.append('circle').attr('r', r0 - 4).attr('fill', U.css('--surface-solid')).attr('stroke', U.css('--gold')).attr('stroke-width', 2);
+    c.append('circle').attr('class', 'fan-center-disc').attr('r', r0 - 4);
     const size = Math.max(11, Math.min(20, r0 / 4.2));
     c.append('text').attr('class', 'fan-center-name').attr('text-anchor', 'middle').attr('y', -size * 0.2).style('font-size', size + 'px').text(clip(focus.given.split(' ')[0] || focus.name, 14));
-    c.append('text').attr('text-anchor', 'middle').attr('y', size * 1.05).style('font', `italic ${size * 0.75}px Fraunces, serif`).style('fill', U.css('--ink-2')).text(clip(focus.surname, 16));
-    c.append('text').attr('text-anchor', 'middle').attr('y', size * 2.1).style('font', `${Math.max(9, size * 0.55)}px Inter`).style('fill', U.css('--ink-3')).text(t.lifespan(focus));
+    c.append('text').attr('class', 'fan-center-sur').attr('text-anchor', 'middle').attr('y', size * 1.05).style('font-size', `${size * 0.8}px`).text(clip(focus.surname, 16));
+    c.append('text').attr('class', 'fan-center-life').attr('text-anchor', 'middle').attr('y', size * 2.1).style('font-size', `${Math.max(9, size * 0.5)}px`).text(t.lifespan(focus));
 
     // legend
     if (mode === 'country') legend.style('display', null).html(countries.slice(0, 12).map(cn => `<span><i style="background:${cScale(cn)}"></i>${U.esc(cn)}</span>`).join(''));
-    else if (mode === 'century' && yExt[0] != null) legend.style('display', null).html(`<span><i style="background:${U.centuryColor(0)}"></i>${yExt[0]}</span><span style="flex:1;min-width:80px;height:9px;border-radius:3px;align-self:center;background:linear-gradient(90deg,${d3.range(0, 1.01, 0.2).map(v => U.centuryColor(v)).join(',')})"></span><span>${yExt[1]}</span>`);
-    else if (mode === 'sex') legend.style('display', null).html(`<span><i style="background:${U.css('--male')}"></i>Paternal line</span><span><i style="background:${U.css('--female')}"></i>Maternal line</span>`);
+    else if (mode === 'century' && yExt[0] != null) legend.style('display', null).html(`<span><i style="background:${U.centuryColor(0)}"></i>${yExt[0]}</span><span class="ramp" style="background:linear-gradient(90deg in oklch,${d3.range(0, 1.01, 0.2).map(v => U.centuryColor(v)).join(',')})"></span><span>${yExt[1]}</span>`);
+    else if (mode === 'sex') legend.style('display', null).html(`<span><i style="background:oklch(0.52 0.075 245)"></i>Paternal line</span><span><i style="background:oklch(0.52 0.075 25)"></i>Maternal line</span>`);
     else legend.style('display', 'none');
 
     // completeness score
     const totalFound = d3.sum(filled, f => f[1]), totalSlots = d3.sum(filled, f => f[2]);
-    score.html(`<div style="font-family:Fraunces,serif;font-size:15px;color:var(--ink)">Ancestor bingo: <b style="color:var(--gold)">${totalFound}</b> / ${totalSlots}</div>` +
-      filled.map(([gn, f, n]) => `<div style="display:flex;align-items:center;gap:8px"><span style="width:58px">Gen ${gn}</span><span style="flex:1;width:110px;height:5px;background:var(--surface-2);border-radius:3px;overflow:hidden"><span style="display:block;height:100%;width:${f / n * 100}%;background:var(--gold)"></span></span><span style="width:46px;text-align:right">${f}/${n}</span></div>`).join(''));
+    score.html(`<div class="bingo-title">Ancestor bingo: <b>${totalFound}</b> / ${totalSlots}</div>` +
+      filled.map(([gn, f, n]) => `<div class="bingo-row"><span class="g">Gen ${gn}</span><span class="track"><span style="width:${f / n * 100}%"></span></span><span class="n">${f}/${n}</span></div>`).join(''));
   }
 
   function lineName(d) {

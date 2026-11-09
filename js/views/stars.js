@@ -15,7 +15,7 @@ window.StarsView = (function () {
 
     ctl = d3.select(el).append('div').attr('class', 'stars-ctl');
     ctl.html(`<div class="seg" data-g="depth" title="How far out from the focus person to draw">
-      <button disabled style="opacity:.6">Reach</button>${[2, 3, 4, 6, 9].map(d => `<button data-v="${d}" class="${d === depth ? 'on' : ''}">${d}</button>`).join('')}<button data-v="99">all</button></div>`);
+      <span class="seg-label">Reach</span>${[2, 3, 4, 6, 9].map(d => `<button data-v="${d}" class="${d === depth ? 'on' : ''}">${d}</button>`).join('')}<button data-v="99">all</button></div>`);
     ctl.selectAll('button[data-v]').on('click', function () {
       depth = +this.dataset.v;
       ctl.selectAll('button[data-v]').classed('on', function () { return +this.dataset.v === depth; });
@@ -23,7 +23,7 @@ window.StarsView = (function () {
     });
 
     tm = d3.select(el).append('div').attr('class', 'time-machine');
-    tm.html(`<div class="tm-head"><span class="tm-title">⏳ Time machine <button class="tm-toggle" data-tm>off</button><button class="tm-toggle" data-play title="Play through the years">▶ play</button></span><span class="tm-year">—</span></div>
+    tm.html(`<div class="tm-head"><span class="tm-title">Time machine <button class="tm-toggle" data-tm>off</button><button class="tm-toggle" data-play title="Play through the years">play</button></span><span class="tm-year">—</span></div>
       <input type="range" min="1800" max="2025" value="1900" step="1" aria-label="Year">
       <div class="tm-sub">Turn it on and drag through the years to see who was alive.</div>`);
     tm.select('input').on('input', function () { year = +this.value; if (!tmOn) setTm(true); applyTime(); });
@@ -40,11 +40,11 @@ window.StarsView = (function () {
 
   function togglePlay() {
     const btn = tm.select('[data-play]');
-    if (playing) { clearInterval(playing); playing = null; btn.text('▶ play').classed('on', false); return; }
+    if (playing) { clearInterval(playing); playing = null; btn.text('play').classed('on', false); return; }
     const inp = tm.select('input').node();
     if (!tmOn) setTm(true);
     if (+inp.value >= +inp.max) inp.value = inp.min;
-    btn.text('❚❚ pause').classed('on', true);
+    btn.text('pause').classed('on', true);
     playing = setInterval(() => {
       if (!el.classList.contains('active')) return;
       inp.value = Math.min(+inp.max, +inp.value + 1);
@@ -139,8 +139,8 @@ window.StarsView = (function () {
       .style('fill', n => n.id === focus.id ? U.css('--gold') : U.sexColor(n.p)).style('opacity', n => n.id === focus.id ? 0.35 : null)
       .style('filter', 'blur(4px)');
     starSel.select('.core').attr('r', n => radius(n)).attr('fill', n => n.id === focus.id ? U.css('--gold') : U.sexColor(n.p))
-      .attr('stroke', n => path && path.has(n.id) ? U.css('--gold') : 'none').attr('stroke-width', 2.5)
-      .style('filter', `drop-shadow(0 0 ${U.isNight() ? 4 : 1}px ${U.css('--gold')})`);
+      .attr('stroke', n => path && path.has(n.id) ? U.css('--gold') : 'none').attr('stroke-width', 1.5)
+      .style('filter', U.isNight() ? `drop-shadow(0 0 4px ${U.css('--gold')})` : null);
     starSel.select('text').attr('y', n => radius(n) + (n.id === focus.id ? 24 : 13)).attr('text-anchor', 'middle')
       .text(n => n.id === focus.id ? n.p.name : (n.d <= 2 || (path && path.has(n.id)) || nodes.length < 70) ? (n.p.given.split(' ')[0] || '?') : '');
 
@@ -213,8 +213,8 @@ window.StarsView = (function () {
     const focus = app.focus;
     const fb = t.estBirth(focus);
     let note = `${alive} of these ${stars.size()} relatives alive`;
-    if (born.length) note += ` · ✶ ${born.slice(0, 2).map(p => p.given.split(' ')[0]).join(', ')} born`;
-    if (died.length) note += ` · ✝ ${died.slice(0, 2).map(p => p.given.split(' ')[0]).join(', ')} died`;
+    if (born.length) note += ` · ${born.slice(0, 2).map(p => p.given.split(' ')[0]).join(', ')} born`;
+    if (died.length) note += ` · ${died.slice(0, 2).map(p => p.given.split(' ')[0]).join(', ')} died`;
     if (fb != null && !born.length) note += year < fb ? ` · ${focus.given.split(' ')[0]} arrives in ${fb - year} yr${fb - year === 1 ? '' : 's'}` : t.aliveIn(focus, year) ? ` · ${focus.given.split(' ')[0]} is ${year - fb}` : '';
     const w = U.WORLD.find(e => e.y === year || (e.end && year >= e.y && year <= e.end));
     if (w) note += ` · ${w.label}`;

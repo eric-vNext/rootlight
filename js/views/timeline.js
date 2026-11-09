@@ -247,7 +247,7 @@ window.TimelineView = (function () {
     const g = bodySvg.append('g').attr('class', 'rt-rows');
     rows.forEach((r, i) => {
       const y = r.top + 14;
-      const col = U.surnameColor(r.p.surname, U.isNight() ? 52 : 50);
+      const col = U.surnameColor(r.p.surname, 'fill');
       const gid = `rtg-${i}`;
       const lg = defs.append('linearGradient').attr('id', gid);
       lg.append('stop').attr('offset', '0%').attr('stop-color', col).attr('stop-opacity', r.estB ? 0.12 : 0.95);
@@ -260,8 +260,8 @@ window.TimelineView = (function () {
       const bw = Math.max(4, x(r.d) - x(r.b));
       r.y = y; r.bw = bw;
       row.append('rect').attr('x', LEFT - 4).attr('width', w).attr('y', y - 1).attr('height', ROW - 4).attr('fill', 'transparent');
-      row.append('rect').attr('class', 'tl-bar').attr('x', x(r.b)).attr('y', y + 2).attr('height', ROW - 10).attr('rx', 9)
-        .attr('fill', `url(#${gid})`).attr('stroke', r.p.id === focus.id ? U.css('--gold') : 'none').attr('stroke-width', 2)
+      row.append('rect').attr('class', 'tl-bar').attr('x', x(r.b)).attr('y', y + 2).attr('height', ROW - 10).attr('rx', 2)
+        .attr('fill', `url(#${gid})`).attr('stroke', r.p.id === focus.id ? U.css('--gold') : 'none').attr('stroke-width', 1.5)
         .attr('width', 0).transition().duration(dur).delay(i * 14).ease(d3.easeCubicOut).attr('width', bw);
       if (r.living) row.append('text').attr('x', x(r.d) + 4).attr('y', y + 16).attr('fill', col).style('font-size', '11px').text('▸');
       for (const u of t.unions(r.p)) {
@@ -276,9 +276,9 @@ window.TimelineView = (function () {
       const before = !inside && x(r.d) + 16 + lw > w - 4 && x(r.b) - 6 - lw > LEFT;
       row.append('text').attr('class', 'tl-name').attr('x', inside ? x(r.b) + 9 : before ? x(r.b) - 6 : x(r.d) + (r.living ? 16 : 6)).attr('y', y + 16)
         .attr('text-anchor', before ? 'end' : null)
-        .style('fill', inside ? (U.isNight() ? '#0b1024' : '#fff') : null).text(label);
+        .style('fill', inside ? 'oklch(0.97 0.015 88)' : null).text(label);
       const age = row.append('g').attr('class', 'rt-age').style('display', 'none');
-      age.append('rect').attr('y', y + 3).attr('height', ROW - 12).attr('rx', (ROW - 12) / 2);
+      age.append('rect').attr('y', y + 3).attr('height', ROW - 12).attr('rx', 2);
       age.append('text').attr('y', y + 15.5).attr('text-anchor', 'middle');
       row.on('mouseenter', e => U.tip(U.tipHtml(t, r.p, r.estB ? 'Birth year estimated from relatives' : ''), e)).on('mousemove', e => U.moveTip(e)).on('mouseleave', U.hideTip);
     });
@@ -472,7 +472,8 @@ window.TimelineView = (function () {
 
   function catColor(e, l) {
     const c = World.CATS[e.cat];
-    return `hsl(${c ? c.hue : 40} 70% ${l}%)`;
+    // l is 0-100; chroma is held low so the categories sit beside the family colours
+    return `oklch(${(l / 100 * 0.9 + 0.12).toFixed(3)} ${l < 30 ? 0.05 : 0.1} ${c ? c.hue : 60})`;
   }
 
   return {

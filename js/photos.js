@@ -186,7 +186,7 @@ window.Photos = (function () {
     box = document.createElement('div');
     box.className = 'lightbox';
     box.hidden = true;
-    box.innerHTML = `<button class="lb-close" aria-label="Close">✕</button>
+    box.innerHTML = `<button class="lb-close" aria-label="Close">×</button>
       <button class="lb-nav lb-prev" aria-label="Previous photo">‹</button>
       <figure><img alt=""><figcaption><b></b><span></span></figcaption></figure>
       <button class="lb-nav lb-next" aria-label="Next photo">›</button>`;
