@@ -4,6 +4,8 @@
 //
 // Privacy: off until the visitor turns it on. Each question sends text built by js/asktree.js: only the people
 // the question points at (default) or the whole tree, as the visitor chooses. Photos and notes are never sent.
+// Living relatives are sent without names or details unless the visitor ticks "Include living relatives"; the
+// panel puts their real names back on screen, since answers refer to people by ID.
 window.Ask = (function () {
   const $ = s => document.querySelector(s);
   const { esc } = U;
@@ -11,7 +13,7 @@ window.Ask = (function () {
   const HISTORY = 3; // earlier question/answer pairs sent with a follow-up
 
   let sample = null, canTools = false, ready = false;
-  let settings = { on: false, scope: 'relevant' };
+  let settings = { on: false, scope: 'relevant', living: false };
   let turns = [];    // { q, a, sent, error, pending, ids }
   let ctl = null;
   let blocked = '';  // set when Claude can't be used in this view at all
@@ -62,6 +64,7 @@ window.Ask = (function () {
     const form = $('#ask-form');
     $('#ask-scope').hidden = !settings.on;
     for (const b of document.querySelectorAll('#ask-scope [data-scope]')) b.classList.toggle('on', b.dataset.scope === settings.scope);
+    $('#ask-living').checked = !!settings.living;
     if (!settings.on) { form.hidden = true; body.innerHTML = intro(); return; }
     form.hidden = false;
     $('#ask-input').disabled = !!blocked;
@@ -81,6 +84,8 @@ window.Ask = (function () {
         <label><input type="radio" name="ask-scope" value="all" ${settings.scope === 'all' ? 'checked' : ''}>
           <span><b>The whole tree</b><em>Every person's text with each question. Best for big “who in the family…” questions.</em></span></label>
       </fieldset>
+      <label class="ask-check"><input type="checkbox" id="ask-living-intro" ${settings.living ? 'checked' : ''}>
+        <span><b>Include living relatives</b><em>When off, living relatives are sent without names, dates, places or jobs, and their names are taken out of your questions. Answers still show their names here.</em></span></label>
       <p class="ask-small">You can change this or turn it off any time. Answers can be wrong, so check them against the tree.</p>
       <div class="ask-actions"><button id="ask-on" class="btn">Turn on Ask</button><button id="ask-later" class="btn ghost">Not now</button></div>
     </div>`;
@@ -115,8 +120,13 @@ window.Ask = (function () {
     const names = t.sent.ids.map(id => App.tree.get(id)).filter(Boolean);
     const scope = t.sent.scope === 'all' ? 'the whole tree' : `${names.length} of ${App.tree.people.size} people`;
     const extra = t.sent.fellBack ? ' (the whole tree was too large to send, so only the people this question is about were sent)' : '';
-    return `<details class="ask-sent"><summary>Sent ${esc(scope)} · ${Math.max(1, Math.round(t.sent.chars / 1024))} KB${esc(extra)}</summary>
-      <p>${names.map(p => esc(p.name)).join(', ')}. Names, dates, places, jobs and family links only.</p></details>`;
+    const hid = names.filter(p => AskTree.withheld(p, { includeLiving: t.sent.living }));
+    const held = hid.length ? ` · ${hid.length} living withheld` : '';
+    const list = names.map(p => esc(p.name) + (hid.includes(p) ? ' <i>(name and details withheld)</i>' : '')).join(', ');
+    const swapped = t.sent.swapped.map(id => App.tree.get(id)).filter(Boolean);
+    return `<details class="ask-sent"><summary>Sent ${esc(scope)}${held} · ${Math.max(1, Math.round(t.sent.chars / 1024))} KB${esc(extra)}</summary>
+      <p>${list}. Names, dates, places, jobs and family links only.</p>
+      ${swapped.length ? `<p>Taken out of your question: ${swapped.map(p => esc(p.name)).join(', ')}.</p>` : ''}</details>`;
   }
 
   // Minimal formatting for answers: paragraphs, "- " lists, **bold**, and [[ID|Name]] person links.
@@ -129,8 +139,10 @@ window.Ask = (function () {
       else src += p.text;
     }
     const inline = s => esc(s).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\u0000(\d+)\u0000/g, (_, n) => {
-      const l = links[+n];
-      return `<button class="ask-ref" data-goto="${esc(l.id)}" title="Go to ${esc(App.tree.get(l.id).name)}">${esc(l.label)}</button>`;
+      const l = links[+n], p = App.tree.get(l.id);
+      // Claude never saw a withheld living relative's name, so show the one in the tree
+      const label = p.living ? p.name : l.label;
+      return `<button class="ask-ref" data-goto="${esc(l.id)}" title="Go to ${esc(p.name)}">${esc(label)}</button>`;
     });
     // runs of "- " lines become lists; other runs of lines become paragraphs
     const bullet = /^\s*[-•*]\s+/;
@@ -152,7 +164,7 @@ window.Ask = (function () {
   // ---------- asking ----------
   function tools(sent) {
     if (!canTools) return undefined;
-    const t = App.tree;
+    const t = App.tree, priv = { includeLiving: sent.living };
     const note = ids => { for (const id of ids) if (!sent.ids.includes(id)) sent.ids.push(id); };
     return [
       {
@@ -162,7 +174,7 @@ window.Ask = (function () {
         execute(input) {
           const a = t.get(String(input.a || '').trim()), b = t.get(String(input.b || '').trim());
           if (!a || !b) throw new Error('Unknown person ID');
-          const out = AskTree.relationText(t, a, b);
+          const out = AskTree.relationText(t, a, b, priv);
           note((t.path(a, b) || []).map(s => s.person.id));
           return out;
         },
@@ -172,7 +184,7 @@ window.Ask = (function () {
         description: 'Search the whole family tree by name, place, occupation or year. Returns up to 12 matching people, one per line, in the same format as the PEOPLE section.',
         inputSchema: { type: 'object', properties: { query: { type: 'string', description: 'Words to search for, e.g. "Cork" or "Ludwig Bauer" or "1918"' } }, required: ['query'] },
         execute(input) {
-          const out = AskTree.find(t, String(input.query || ''), { homeId: App.homeId });
+          const out = AskTree.find(t, String(input.query || ''), { homeId: App.homeId, ...priv });
           note([...out.matchAll(/^(\S+) \|/gm)].map(m => m[1]));
           return out;
         },
@@ -186,14 +198,16 @@ window.Ask = (function () {
     const t = App.tree;
     const prev = turns.filter(x => x.a && !x.error).slice(-HISTORY);
     const extra = [...new Set(prev.slice(-2).flatMap(x => [...(x.ids || []), ...AskTree.refIds(x.a, t)]))];
-    const built = AskTree.build(t, question, { scope: settings.scope, homeId: App.homeId, focusId: App.focusId, extra, tools: canTools });
-    const turn = { q: question, a: '', pending: true, ids: built.direct.slice(0, 6), sent: { scope: built.scope, fellBack: built.fellBack, ids: built.ids.slice(), chars: built.sent.chars } };
+    const living = !!settings.living;
+    const built = AskTree.build(t, question, { scope: settings.scope, homeId: App.homeId, focusId: App.focusId, extra, tools: canTools, includeLiving: living });
+    const swapped = living ? [] : AskTree.redactQuestion(t, question).ids;
+    const turn = { q: question, qSent: built.question, a: '', pending: true, ids: built.direct.slice(0, 6), sent: { scope: built.scope, fellBack: built.fellBack, ids: built.ids.slice(), chars: built.sent.chars, living, swapped } };
     turns.push(turn);
     render();
 
     const input = [{ role: 'user', content: built.prompt }];
-    for (const x of prev) input.push({ role: 'user', content: x.q }, { role: 'assistant', content: x.a });
-    input.push({ role: 'user', content: `Question: ${question}` });
+    for (const x of prev) input.push({ role: 'user', content: x.qSent }, { role: 'assistant', content: x.a });
+    input.push({ role: 'user', content: `Question: ${built.question}` });
 
     ctl = new AbortController();
     const opts = { signal: ctl.signal, onText: ({ text }) => { turn.a = text; render(); }, tools: tools(turn.sent) };
@@ -245,11 +259,12 @@ window.Ask = (function () {
       if (el.dataset.goto && innerWidth < 760) close(); // the sheet covers the view on phones; app.js does the navigating
       else if (el.id === 'ask-on') {
         const pick = panel.querySelector('input[name="ask-scope"]:checked');
-        settings = { on: true, scope: pick ? pick.value : 'relevant' };
+        settings = { on: true, scope: pick ? pick.value : 'relevant', living: !!(panel.querySelector('#ask-living-intro') || {}).checked };
         save(); render(); $('#ask-input').focus();
       } else if (el.id === 'ask-later') close();
       else if (el.id === 'ask-off') { settings.on = false; save(); reset(); render(); }
       else if (el.dataset.scope) { settings.scope = el.dataset.scope; save(); render(); }
+      else if (el.id === 'ask-living') { settings.living = el.checked; save(); render(); }
       else if (el.dataset.ask) ask(el.dataset.ask);
       else if (el.hasAttribute('data-stop')) ctl && ctl.abort();
       else if (el.dataset.retry != null) { const t = turns[+el.dataset.retry]; if (t) { turns.splice(+el.dataset.retry, 1); ask(t.q); } }

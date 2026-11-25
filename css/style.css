@@ -477,6 +477,12 @@ body.drag-anywhere .welcome-card .dropzone { border-color: var(--gold); }
 .ask-choice input { accent-color: var(--gold); margin-top: 3px; }
 .ask-choice b { display: block; font-weight: 500; color: var(--ink); }
 .ask-choice em { display: block; font-style: normal; font-size: 12px; color: var(--ink-3); }
+.ask-check { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
+.ask-check input { accent-color: var(--gold); margin-top: 3px; }
+.ask-check b { display: block; font-weight: 500; color: var(--ink); }
+.ask-check em { display: block; font-style: normal; font-size: 12px; color: var(--ink-3); }
+.ask-living { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.ask-living input { accent-color: var(--gold); margin: 0; }
 .ask-actions { display: flex; gap: 8px; margin-top: 4px; }
 .ask-actions .btn:first-child { border-color: var(--gold); color: var(--gold); }
 .ask-ideas { display: flex; flex-wrap: wrap; gap: 6px; }
