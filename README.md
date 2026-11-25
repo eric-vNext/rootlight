@@ -43,6 +43,7 @@ In search, `⇧↵` asks "how are we related?" and lights up the path between th
 - `js/photos.js`: shrinks and stores matched photos, fills avatars, and runs the photo viewer
 - `js/asktree.js`: builds the text sent to Claude for Ask (person lines, tree facts, retrieval, computed relationships) and reads person links back out of answers
 - `js/ask.js`: the Ask panel, shown only when the Claude runtime offers it
+- `js/appicon.js`: draws the sprout logo as the installed app's Dock and window icon (only runs inside the installed app)
 - `test/`: `node test/media.test.js`, `node test/zip.test.js`, `node test/match.test.js` and `node test/asktree.test.js`
 - `js/world.js`: eras, world events, and the Wikimedia Commons image lookup
 - `js/views/*.js`: one file per view
