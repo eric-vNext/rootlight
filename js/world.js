@@ -146,7 +146,8 @@ window.World = (function () {
   function imagery() {
     if (memo) return Promise.resolve(memo);
     if (pending) return pending;
-    const cache = readCache();
+    // pictures shipped with the app (scripts/bake-world.mjs) win; the network only fills any gaps
+    const cache = Object.assign(readCache(), window.WORLD_BAKED || {});
     const missing = EVENTS.map(e => e.wiki).filter(w => !cache[w]);
     if (!missing.length) return Promise.resolve(memo = cache);
     const batches = [];
