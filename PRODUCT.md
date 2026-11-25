@@ -26,11 +26,14 @@ A storytelling explorer, not a research or editing tool. Genealogy apps are buil
 - **Input:** a GEDCOM export (5.5, 5.5.1 or 7.0). It can be a `.ged` file, or a `.gdz`/`.zip` bundle that includes photos. A photo folder can also be supplied alongside the file. Exports come from many different apps and are often messy: mixed encodings, one-sided family links, and Windows absolute paths for photos.
 - **How it opens:** a file is dropped or chosen in the browser. The last file and its shrunk photos are remembered in that browser, so the visitor can reopen them without re-supplying anything.
 - **Where it runs:** hosted on GitHub Pages at https://eric-vnext.github.io/rootlight/. `?sample` opens a fictional demo family.
+- **Inside Claude:** the same files also run as a Claude artifact that can be installed as a Mac or Windows app. The Timeline's world-event images ship with the app (`img/world/`, made by `scripts/bake-world.mjs`) because artifacts can't fetch Wikipedia. Only there, an **Ask** panel lets visitors ask plain-language questions about the tree (see below).
 
 ## Capabilities and Constraints
 
 **Firm constraints**
 - **Data stays in the browser.** Nothing from a user's file or photos is ever uploaded. The only outside requests are for a fixed list of world events (summaries from Wikipedia, public-domain or CC0 images from Wikimedia Commons). Photo references that are web links are never fetched.
+- **One exception, opt-in: Ask.** In the Claude app, the Ask panel sends tree text to Anthropic's Claude on the visitor's own Claude account, only when they ask a question. It is off until the visitor turns it on after reading what gets sent, and the visitor picks the scope: only the people a question points at plus their parents, spouses and children (the default), or the whole tree. What is sent is names, dates, places, occupations, migrations and family links, plus relationship labels Rootlight computes. Photos, notes and source citations are never sent. Each answer shows how many people were sent and who. On the GitHub Pages site the feature doesn't exist.
+- **Answers are grounded, not invented.** Claude is told to use only the data sent and to say when the tree doesn't record something. Relationships are computed by Rootlight's own code and handed over, never left for the model to work out. Answer names link back to people only when the ID exists in the tree.
 - **Static site, no build step.** Plain HTML, CSS and JavaScript that also runs from `file://`. D3 comes from cdnjs. There is no framework and no bundler.
 - **Read-only.** Rootlight views GEDCOM data and never edits or exports it. Photos come only from the GEDCOM's own references plus the files the user supplies. Adding photos to a person by hand is deliberately not offered yet.
 

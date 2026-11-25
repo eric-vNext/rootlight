@@ -53,6 +53,7 @@
         <button data-view="almanac" role="tab" title="Family almanac (5)"><span>❦</span><em>Almanac</em></button>
       </nav>
       <div class="tools">
+        <button id="ask-btn" class="ask-pill" title="Ask about the family (A)" aria-controls="ask" aria-expanded="false" hidden><span>✧</span><em>Ask</em></button>
         <button id="search-btn" class="search-pill" title="Search (/ or ⌘K)"><span>⌕</span><em>Find someone…</em><kbd>/</kbd></button>
         <button id="dice" class="icon-btn" title="Surprise me — jump to a random relative (R)">🎲</button>
         <button id="home-btn" class="icon-btn" title="Go home (H)">⌂</button>
@@ -79,6 +80,23 @@
       <div id="view-almanac" class="view scroll" data-view="almanac"></div>
       <div id="hint" class="hint"></div>
     </main>
+
+    <aside id="ask" class="ask" aria-label="Ask about the family" aria-hidden="true">
+      <header class="ask-head">
+        <h2>Ask about the family</h2>
+        <button id="ask-close" class="icon-btn" title="Close (Esc)" aria-label="Close">✕</button>
+      </header>
+      <div id="ask-body" class="ask-body" aria-live="polite"></div>
+      <form id="ask-form" class="ask-form" hidden>
+        <textarea id="ask-input" rows="2" placeholder="Ask anything about this tree…" aria-label="Your question"></textarea>
+        <button id="ask-send" class="btn" type="submit">Ask</button>
+      </form>
+      <div id="ask-scope" class="ask-scope" hidden>
+        <span>Claude sees</span>
+        <span class="seg"><button data-scope="relevant" title="Only the people a question is about, plus their close family">People asked about</button><button data-scope="all" title="Every person's text with each question">Whole tree</button></span>
+        <button id="ask-off" class="ask-link" title="Stop sending anything to Claude">Turn off</button>
+      </div>
+    </aside>
 
     <aside id="panel" class="panel" aria-live="polite"></aside>
     <button id="panel-toggle" class="panel-toggle" title="Toggle story panel (S)">❮</button>
@@ -117,5 +135,7 @@
   <script src="js/views/almanac.js"></script>
   <script src="js/panel.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/asktree.js"></script>
+  <script src="js/ask.js"></script>
 </body>
 </html>

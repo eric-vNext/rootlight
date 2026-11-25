@@ -2,7 +2,9 @@
 
 A GEDCOM family-tree explorer that runs entirely in your browser. Nothing is uploaded.
 
-The Timeline fetches world-event photos and summaries from Wikipedia and Wikimedia Commons. It only requests the fixed list of events, never anything from your file, and it uses only images Commons marks as public domain or CC0. Offline, it falls back to generated artwork.
+The Timeline's world-event photos and summaries ship with the app (`img/world/` and `js/world-data.js`, made by `node scripts/bake-world.mjs` on macOS). Anything missing is fetched from Wikipedia and Wikimedia Commons: only the fixed list of events, never anything from your file, and only images Commons marks as public domain or CC0. Offline, it falls back to generated artwork.
+
+**Ask about the family (Claude app only).** When Rootlight runs inside Claude (as an artifact or an installed app), an **✧ Ask** button opens a panel for plain-language questions like “Who lived longest?” or “How am I related to Walter?”. Answers name people as links you can click. It's off until you turn it on, and you choose what Claude may see: only the people a question is about plus their close family (the default), or the whole tree. It sends names, dates, places, jobs and family links to Anthropic's Claude on your Claude account, never photos or notes, and each answer lists who was sent. Relationships are computed by Rootlight, not guessed by the model. On the regular website the button doesn't appear and nothing is sent.
 
 ## Run it
 
@@ -30,7 +32,7 @@ The **story panel** writes a short biography for each person. It also shows thei
 
 ## Keyboard
 
-`/` or `⌘K` search · `↑` father · `⇧↑` mother · `↓` child · `←` `→` siblings · `R` random relative · `H` home · `S` story panel · `T` theme · `Backspace` back
+`/` or `⌘K` search · `A` ask (in the Claude app) · `↑` father · `⇧↑` mother · `↓` child · `←` `→` siblings · `R` random relative · `H` home · `S` story panel · `T` theme · `Backspace` back
 
 In search, `⇧↵` asks "how are we related?" and lights up the path between the two people.
 
@@ -39,7 +41,9 @@ In search, `⇧↵` asks "how are we related?" and lights up the path between th
 - `js/gedcom.js`: the GEDCOM parser (UTF-8/UTF-16/ANSI, CONC/CONT, note records), the family model, and the relationship calculator
 - `js/media.js`: opens `.gdz`/`.zip` bundles, photo folders and loose images (zip reader included, no libraries), and matches photo references to the files supplied
 - `js/photos.js`: shrinks and stores matched photos, fills avatars, and runs the photo viewer
-- `test/`: `node test/media.test.js` and `node test/zip.test.js`
+- `js/asktree.js`: builds the text sent to Claude for Ask (person lines, tree facts, retrieval, computed relationships) and reads person links back out of answers
+- `js/ask.js`: the Ask panel, shown only when the Claude runtime offers it
+- `test/`: `node test/media.test.js`, `node test/zip.test.js`, `node test/match.test.js` and `node test/asktree.test.js`
 - `js/world.js`: eras, world events, and the Wikimedia Commons image lookup
 - `js/views/*.js`: one file per view
 - `js/panel.js`: the story panel

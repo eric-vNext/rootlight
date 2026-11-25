@@ -454,3 +454,69 @@ body.drag-anywhere .welcome-card .dropzone { border-color: var(--gold); }
   .rt-credit { left: 16px; right: auto; top: 18px; bottom: auto; max-width: 55%; text-align: left; }
   .rt-lede { font-size: 13.5px; }
 }
+
+/* ---------- ask about the family (only inside the Claude app) ---------- */
+.ask-pill { display: flex; align-items: center; gap: 6px; border: 1px solid var(--gold-soft); background: var(--gold-soft); color: var(--gold); border-radius: 10px; padding: 6px 12px; margin-right: 6px; font-weight: 500; transition: .2s; }
+.ask-pill span { font-size: 15px; line-height: 1; }
+.ask-pill em { font-style: normal; }
+.ask-pill:hover, .ask-pill[aria-expanded="true"] { border-color: var(--gold); box-shadow: 0 0 18px var(--gold-soft); }
+.ask { position: fixed; top: 57px; left: 0; bottom: 41px; width: 400px; max-width: 100%; display: flex; flex-direction: column; background: var(--surface); backdrop-filter: blur(18px); border-right: 1px solid var(--line); z-index: 5; box-shadow: var(--shadow);
+  transform: translateX(-105%); visibility: hidden; transition: transform .4s cubic-bezier(.4, 0, .2, 1), visibility 0s .4s; }
+.app.ask-open .ask { transform: none; visibility: visible; transition: transform .4s cubic-bezier(.4, 0, .2, 1); }
+.ask-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 14px 10px 20px; border-bottom: 1px solid var(--line); }
+.ask-head h2 { margin: 0; font-size: 19px; font-style: italic; }
+.ask-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.ask-lede { font: 300 17px/1.45 Fraunces, Georgia, serif; color: var(--ink); margin: 4px 0 14px; }
+.ask-intro p { color: var(--ink-2); margin: 0 0 12px; }
+.ask-intro .ask-lede { color: var(--ink); }
+.ask-small { font-size: 12px; color: var(--ink-3) !important; }
+.ask-choice { border: 0; padding: 0; margin: 4px 0 14px; display: grid; gap: 8px; }
+.ask-choice legend { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-3); margin-bottom: 6px; }
+.ask-choice label { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); cursor: pointer; transition: .2s; }
+.ask-choice label:has(input:checked) { border-color: var(--gold); background: var(--gold-soft); }
+.ask-choice input { accent-color: var(--gold); margin-top: 3px; }
+.ask-choice b { display: block; font-weight: 500; color: var(--ink); }
+.ask-choice em { display: block; font-style: normal; font-size: 12px; color: var(--ink-3); }
+.ask-actions { display: flex; gap: 8px; margin-top: 4px; }
+.ask-actions .btn:first-child { border-color: var(--gold); color: var(--gold); }
+.ask-ideas { display: flex; flex-wrap: wrap; gap: 6px; }
+.ask-ideas .chip { font-size: 12.5px; text-align: left; }
+.ask-turn { margin-bottom: 18px; animation: fade .25s; }
+.ask-q { margin: 0 0 8px auto; width: fit-content; max-width: 88%; padding: 8px 12px; border-radius: 14px 14px 4px 14px; background: var(--gold-soft); color: var(--ink); white-space: pre-wrap; }
+.ask-a { font: 15px/1.6 Fraunces, Georgia, serif; color: var(--ink); }
+.ask-a p { margin: 0 0 8px; }
+.ask-a ul { margin: 0 0 8px; padding-left: 18px; }
+.ask-a li { margin: 2px 0; }
+.ask-a b { font-weight: 600; }
+.ask-ref { border: 0; background: none; padding: 0; font: inherit; color: var(--gold); border-bottom: 1px dotted currentColor; cursor: pointer; }
+.ask-ref:hover, .ask-ref:focus-visible { border-bottom-style: solid; outline: 0; }
+.ask-thinking { display: flex; align-items: center; gap: 4px; color: var(--ink-3); font: italic 14px Fraunces, serif; }
+.ask-thinking span { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); animation: ask-pulse 1.2s ease-in-out infinite; }
+.ask-thinking span:nth-child(2) { animation-delay: .15s; }
+.ask-thinking span:nth-child(3) { animation-delay: .3s; margin-right: 6px; }
+@keyframes ask-pulse { 0%, 100% { opacity: .25; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.1); } }
+.ask-note { margin: 6px 0 0; padding: 8px 12px; border-radius: 10px; border-left: 3px solid var(--gold); background: var(--surface-2); color: var(--ink-2); font-size: 13px; }
+.ask-meta { margin-top: 4px; }
+.ask-link { border: 0; background: none; padding: 0; color: var(--ink-3); font-size: 12px; text-decoration: underline; text-underline-offset: 2px; }
+.ask-link:hover { color: var(--gold); }
+.ask-sent { margin-top: 6px; font-size: 11.5px; color: var(--ink-3); }
+.ask-sent summary { cursor: pointer; list-style: none; }
+.ask-sent summary::before { content: "▸ "; }
+.ask-sent[open] summary::before { content: "▾ "; }
+.ask-sent p { margin: 6px 0 0; line-height: 1.5; }
+.ask-form { display: flex; gap: 8px; align-items: flex-end; padding: 12px 14px 8px; border-top: 1px solid var(--line); }
+.ask-form textarea { flex: 1; resize: none; font: 14px/1.4 Inter, system-ui, sans-serif; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 9px 12px; outline: none; }
+.ask-form textarea:focus { border-color: var(--gold); }
+.ask-form .btn { padding: 9px 16px; border-color: var(--gold); color: var(--gold); }
+.ask-form .btn:disabled, .ask-form textarea:disabled { opacity: .5; cursor: default; transform: none; }
+.ask-scope { display: flex; align-items: center; gap: 8px; padding: 2px 14px 12px; font-size: 11.5px; color: var(--ink-3); flex-wrap: wrap; }
+.ask-scope .seg { backdrop-filter: none; }
+.ask-scope .seg button { font-size: 11.5px; padding: 3px 8px; }
+.ask-scope .ask-link { margin-left: auto; }
+@media (max-width: 760px) {
+  .ask-pill { margin-right: 0; border: 0; background: transparent; padding: 6px 8px; }
+  .ask-pill em { display: none; }
+  .ask-pill span { font-size: 18px; }
+  .ask { top: auto; bottom: 0; height: 86%; width: 100%; border-right: 0; border-top: 1px solid var(--line); border-radius: 20px 20px 0 0; transform: translateY(105%); z-index: 6; }
+}
+@media (prefers-reduced-motion: reduce) { .ask, .app.ask-open .ask { transition: none; } .ask-thinking span { animation: none; opacity: .8; } }

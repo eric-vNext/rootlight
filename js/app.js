@@ -37,6 +37,7 @@
       $('#app').hidden = false;
       document.title = `${name.replace(/\.(ged|gedcom)$/i, '')} · Rootlight`;
       for (const v of Object.values(VIEWS)) v.reset && v.reset();
+      if (window.Ask) Ask.reset();
       this.setView(opts.view || this.view, true);
       this.go(home.id, { quiet: true });
       if (opts.save !== false) Store.save({ name, text, home: home.id });
@@ -437,6 +438,7 @@
       else if (k === 'h' || k === 'H') App.go(App.homeId);
       else if (k === 's' || k === 'S') togglePanel();
       else if (k === 't' || k === 'T') App.toggleTheme();
+      else if ((k === 'a' || k === 'A') && window.Ask && Ask.available) { e.preventDefault(); Ask.toggle(); }
       else if (k === 'Backspace' && App.trail.length > 1) { App.trail.pop(); App.go(App.trail.pop()); }
       else if ('12345'.includes(k)) App.setView(Object.keys(VIEWS)[+k - 1]);
     });
